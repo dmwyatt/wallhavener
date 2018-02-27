@@ -2,7 +2,7 @@ import os
 import pickle
 import re
 from pathlib import Path
-from typing import Iterable, List, Optional, Sequence, Tuple, Dict
+from typing import Iterable, List, Optional, Sequence, Tuple, Dict, Generator, Iterator
 from urllib.parse import parse_qs, urlencode, urlsplit
 
 from credentials import Credentials
@@ -458,23 +458,20 @@ class Wallhaven:
                                                        self.filter.credentials_required else None)
         return self._requester
 
-    def __iter__(self) -> Iterable['Preview']:
-        if self.current_page is None:
-            self.current_page = WallhavenResults(1, self.filter, self.requester)
+    def __iter__(self) -> Iterator['Preview']:
+        current_page = WallhavenResults(1, self.filter, self.requester)
 
-        while self.current_page.soup_current_page <= self.current_page.soup_total_pages_count:
-            if self.current_page.soup_current_page == 9:
-                print('what')
-            print(f'Yielding images from page {self.current_page.soup_current_page}/'
-                  f'{self.current_page.soup_total_pages_count}')
-            for wallpaper_preview in self.current_page:
+        while current_page.soup_current_page <= current_page.soup_total_pages_count:
+            print(f'Yielding images from page {current_page.soup_current_page}/'
+                  f'{current_page.soup_total_pages_count}')
+            for wallpaper_preview in current_page:
                 yield wallpaper_preview
 
-            if self.current_page.soup_current_page == self.current_page.soup_total_pages_count:
+            if current_page.soup_current_page == current_page.soup_total_pages_count:
                 return
 
-            self.current_page = WallhavenResults(self.current_page.soup_current_page + 1,
-                                                 self.filter, self.requester)
+            current_page = WallhavenResults(current_page.soup_current_page + 1,
+                                            self.filter, self.requester)
 
 
 def bools_to_string(bools: Sequence[bool]) -> str:
